@@ -6,6 +6,11 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class SendCodeRequest(BaseModel):
+    """发送验证码请求"""
+    phone: str = Field(..., description="手机号")
+
+
 class UserRegister(BaseModel):
     """用户注册"""
     phone: str = Field(..., description="手机号")
@@ -34,6 +39,12 @@ class UserProfileUpdate(BaseModel):
     """更新个人资料"""
     nickname: Optional[str] = Field(None, max_length=50)
     avatar: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """修改密码"""
+    old_password: str = Field(..., min_length=6, max_length=50, description="原密码")
+    new_password: str = Field(..., min_length=6, max_length=50, description="新密码")
 
 
 class UserOut(BaseModel):

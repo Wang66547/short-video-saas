@@ -199,7 +199,7 @@ class TTSService:
             # 使用 ffmpeg 生成静音音频
             import subprocess
             cmd = [
-                settings.FFmpeg_BINARIES, "-y",
+                settings.FFMPEG_BIN, "-y",
                 "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
                 "-t", "1",
                 output_path,

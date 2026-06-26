@@ -42,7 +42,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_DAY: int = 10000
 
     # ==================== 视频处理 ====================
-    FFmpeg_BINARIES: str = "ffmpeg"
+    FFMPEG_BIN: str = "ffmpeg"
+    FFPROBE_BIN: str = "ffprobe"
     TEMP_DIR: str = "./temp"
     VIDEO_STORAGE_PATH: str = "./videos"
     MAX_VIDEO_SIZE_MB: int = 500

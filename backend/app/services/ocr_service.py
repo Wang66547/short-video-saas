@@ -26,7 +26,7 @@ async def recognize_text_from_video(video_path: str) -> list:
         # 使用 ffmpeg 抽帧
         import subprocess
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFMPEG_BIN,
             "-i", video_path,
             "-vf", "fps=1",
             os.path.join(frames_dir, "frame_%04d.jpg"),

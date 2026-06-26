@@ -112,7 +112,7 @@ class CleanExportService:
         """获取视频信息"""
         try:
             cmd = [
-                settings.FFmpeg_BINARIES,
+                settings.FFPROBE_BIN,
                 "-v", "quiet",
                 "-print_format", "json",
                 "-show_streams",
@@ -154,7 +154,7 @@ class CleanExportService:
             subtitle_h = int(height * 0.15)
 
             cmd = [
-                settings.FFmpeg_BINARIES, "-y",
+                settings.FFMPEG_BIN, "-y",
                 "-i", input_path,
                 "-vf", f"boxblur=h={subtitle_h}:w={width}:s={4}",
                 "-c:a", "copy",
@@ -163,7 +163,7 @@ class CleanExportService:
 
             # 更精确的做法：用黑色矩形覆盖字幕区域
             cmd = [
-                settings.FFmpeg_BINARIES, "-y",
+                settings.FFMPEG_BIN, "-y",
                 "-i", input_path,
                 "-vf", f"color=black:s={width}x{subtitle_h}:d=0,fade=t=in:st=0:d=0.1,setsar=1,"
                        f"overlay=(w-w{width})*0.5:{h-subtitle_h}",
@@ -205,7 +205,7 @@ class CleanExportService:
             )
 
             cmd = [
-                settings.FFmpeg_BINARIES, "-y",
+                settings.FFMPEG_BIN, "-y",
                 "-i", input_path,
                 "-vf", overlay_expr,
                 "-c:a", "copy",

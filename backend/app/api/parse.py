@@ -173,14 +173,15 @@ async def batch_create_parse(
         raise HTTPException(status_code=400, detail="单次最多支持50个视频")
 
     # 检查额度
-    remaining = (current_user.daily_parse_limit or 3) - (
-        await db.execute(
-            select(func.count()).select_from(ParseRecord).where(
-                ParseRecord.user_id == current_user.id,
-                ParseRecord.created_at >= datetime.now(timezone(timedelta(hours=8))).replace(hour=0, minute=0, second=0),
-            )
+    from app.core.permissions import get_daily_limit
+    daily_limit = get_daily_limit(current_user.membership_level, "parse")
+    today_count = (await db.execute(
+        select(func.count()).select_from(ParseRecord).where(
+            ParseRecord.user_id == current_user.id,
+            ParseRecord.created_at >= datetime.now(timezone(timedelta(hours=8))).replace(hour=0, minute=0, second=0),
         )
-    ).scalar() or 0
+    )).scalar() or 0
+    remaining = daily_limit - today_count
 
     if remaining < len(video_urls):
         raise HTTPException(

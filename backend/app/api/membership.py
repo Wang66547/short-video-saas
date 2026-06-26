@@ -88,26 +88,10 @@ async def redeem(
     if not plan:
         raise HTTPException(status_code=404, detail="关联套餐不存在")
 
-    # 计算到期时间
-    now = datetime.now(timezone(timedelta(hours=8)))
-    days_map = {"monthly": 30, "quarterly": 90, "yearly": 365, "lifetime": 99999, "credit": 0}
+    # 兑换会员权益
+    from app.services.membership_service import redeem_card_key
+    await redeem_card_key(db, card, current_user.id)
 
-    if current_user.membership_expire_at and current_user.membership_expire_at > now:
-        add_days = days_map.get(plan.plan_type, 30)
-        new_expire = current_user.membership_expire_at + timedelta(days=add_days)
-    else:
-        new_expire = now + timedelta(days=days_map.get(plan.plan_type, 30))
-
-    # 更新用户会员状态
-    current_user.membership_level = plan.plan_type
-    current_user.membership_expire_at = new_expire if plan.plan_type != "credit" else now + timedelta(days=plan.daily_parse_count)
-
-    # 更新卡密状态
-    card.status = CardKeyStatus.USED
-    card.used_by_user_id = current_user.id
-    card.used_at = now
-
-    await db.commit()
     return {"code": 200, "message": "兑换成功", "data": {"plan_name": plan.name}}
 
 

@@ -178,7 +178,7 @@ class WatermarkRemovalService:
             # 使用滤镜时必须重新编码，不能用 copy 编码器
             # preserve_quality=True 时使用高质量编码参数，False 时使用快速编码参数
             cmd = [
-                settings.FFmpeg_BINARIES,
+                settings.FFMPEG_BIN,
                 "-y",
                 "-i", input_path,
                 "-c:v", "libx264",
@@ -225,7 +225,7 @@ class WatermarkRemovalService:
         """使用 ffprobe 获取视频分辨率"""
         try:
             cmd = [
-                settings.FFmpeg_BINARIES,
+                settings.FFPROBE_BIN,
                 "-v", "quiet",
                 "-print_format", "json",
                 "-show_streams",
@@ -255,7 +255,7 @@ class WatermarkRemovalService:
         """直接复制视频文件（无损）"""
         try:
             cmd = [
-                settings.FFmpeg_BINARIES,
+                settings.FFMPEG_BIN,
                 "-y",
                 "-i", input_path,
                 "-c", "copy",

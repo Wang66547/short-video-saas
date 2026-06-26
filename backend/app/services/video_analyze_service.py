@@ -27,7 +27,7 @@ async def get_video_info(video_path: str) -> dict:
     """
     try:
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFPROBE_BIN,
             "-v", "quiet",
             "-print_format", "json",
             "-show_streams",
@@ -108,7 +108,7 @@ async def extract_speech_and_bgm(video_path: str, output_dir: str) -> dict:
         # 方法1: 使用ffmpeg分离人声和背景音（简单版本）
         # 实际生产中建议使用demucs或spleeter等专业工具
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFMPEG_BIN,
             "-i", video_path,
             "-vn",
             "-acodec", "pcm_s16le",
@@ -222,7 +222,7 @@ async def detect_watermark(video_path: str, output_dir: str) -> dict:
         # 截取一帧进行分析
         frame_path = os.path.join(output_dir, "analysis_frame.jpg")
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFMPEG_BIN,
             "-i", video_path,
             "-ss", "00:00:01",
             "-vframes", "1",

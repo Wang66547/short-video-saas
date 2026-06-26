@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.core.security import hash_password, verify_password, get_current_user, get_current_admin
 from app.models.user import User
 from app.models.admin import Admin
-from app.schemas.user import UserProfileUpdate, UserOut
+from app.schemas.user import UserProfileUpdate, UserOut, ChangePasswordRequest
 
 router = APIRouter()
 
@@ -31,17 +31,16 @@ async def update_profile(
 
 @router.put("/password", response_model=dict)
 async def change_password(
-    old_password: str,
-    new_password: str,
+    body: ChangePasswordRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """修改密码"""
-    if not verify_password(old_password, current_user.password_hash):
+    if not verify_password(body.old_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="原密码错误")
-    if len(new_password) < 6:
+    if len(body.new_password) < 6:
         raise HTTPException(status_code=400, detail="新密码至少6位")
-    current_user.password_hash = hash_password(new_password)
+    current_user.password_hash = hash_password(body.new_password)
     await db.commit()
     
     from app.core.redis_client import increment_user_token_version

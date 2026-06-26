@@ -47,7 +47,7 @@ async def get_video_duration(video_path: str) -> float:
     import subprocess
     try:
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFMPEG_BIN,
             "-i", video_path,
             "-hide_banner",
             "-loglevel", "error",
@@ -81,7 +81,7 @@ async def generate_thumbnail(video_path: str, output_path: str, timestamp: float
     import subprocess
     try:
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFMPEG_BIN,
             "-ss", str(timestamp),
             "-i", video_path,
             "-vframes", "1",

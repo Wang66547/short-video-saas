@@ -7,5 +7,5 @@ export function updateProfile(data) {
 
 // 修改密码
 export function changePassword(data) {
-  return api.put("/users/password", null, { params: data })
+  return api.put("/users/password", data)
 }

@@ -22,7 +22,7 @@ async def run_ffmpeg(args: list, timeout: int = 300) -> tuple:
     :param timeout: 超时时间(秒)
     :return: (stdout, stderr, returncode)
     """
-    cmd = [settings.FFmpeg_BINARIES, "-y"] + args
+    cmd = [settings.FFMPEG_BIN, "-y"] + args
     
     proc = await asyncio.create_subprocess_exec(
         *cmd,
@@ -77,7 +77,7 @@ async def get_video_info(video_path: str) -> dict:
     """
     try:
         cmd = [
-            settings.FFmpeg_BINARIES,
+            settings.FFPROBE_BIN,
             "-v", "quiet",
             "-print_format", "json",
             "-show_streams",

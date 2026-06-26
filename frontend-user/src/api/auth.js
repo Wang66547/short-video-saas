@@ -2,10 +2,10 @@ import api from "./index"
 
 /**
  * 发送短信验证码
- * GET /api/auth/send-code?phone=xxx
+ * POST /api/auth/send-code
  */
 export function sendCode(phone) {
-  return api.get("/auth/send-code", { params: { phone } })
+  return api.post("/auth/send-code", { phone })
 }
 
 /**

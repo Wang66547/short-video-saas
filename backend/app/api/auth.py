@@ -22,7 +22,7 @@ from app.models.parse_record import ParseRecord
 from app.models.generate_record import GenerateRecord
 from app.schemas.user import (
     UserRegister, UserLogin, TokenPair, 
-    UserProfileUpdate, UserOut
+    UserProfileUpdate, UserOut, SendCodeRequest
 )
 from app.schemas.parse_record import ParseRecordOut
 from app.schemas.generate_record import GenerateRecordOut
@@ -37,7 +37,7 @@ router = APIRouter()
 
 @router.post("/send-code", response_model=dict)
 async def send_verification_code(
-    phone: str,
+    body: SendCodeRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -46,6 +46,7 @@ async def send_verification_code(
     2. 检查发送频率（1分钟/60秒）
     3. 发送验证码或返回测试码
     """
+    phone = body.phone
     # 校验手机号格式
     import re
     if not re.match(r'^1[3-9]\d{9}$', phone):
