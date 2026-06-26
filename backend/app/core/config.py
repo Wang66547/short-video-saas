@@ -47,13 +47,29 @@ class Settings(BaseSettings):
     VIDEO_STORAGE_PATH: str = "./videos"
     MAX_VIDEO_SIZE_MB: int = 500
 
-    # ==================== AI 服务 ====================
+    # ==================== AI 视频生成 ====================
     JIMENG_API_KEY: str = ""
     JIMENG_BASE_URL: str = "https://api.jimeng.jianying.com/visual/api"
     KLING_API_KEY: str = ""
     KLING_BASE_URL: str = "https://klingai.com/api"
+    DEFAULT_AI_PLATFORM: str = "jimeng"
+
+    # ==================== Whisper 语音识别 ====================
     WHISPER_MODEL: str = "base"
-    WHISPER_DEVICE: str = "cuda"
+    WHISPER_DEVICE: str = "cpu"
+    WHISPER_LANGUAGE: str = "zh"
+
+    # ==================== TTS 语音合成 ====================
+    DEFAULT_TTS_PROVIDER: str = "ali"
+    ALIYUN_TTS_API_KEY: str = ""
+    ALIYUN_TTS_APP_KEY: str = ""
+    TENCENT_TTS_SECRET_ID: str = ""
+    TENCENT_TTS_SECRET_KEY: str = ""
+
+    # ==================== 大模型（文案改写） ====================
+    OPENAI_API_BASE: str = "https://apihub.agnes-ai.com/v1"
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "agnes-2.0-flash"
 
     # ==================== 支付配置 ====================
     WECHAT_APPID: str = ""
