@@ -1,0 +1,64 @@
+version: "3.8"
+
+# ============================================================
+# 爆款短视频复刻SaaS平台 - 本地开发环境编排
+# ============================================================
+# 启动命令: docker-compose -f docker-compose.dev.yml up -d
+# 停止命令: docker-compose -f docker-compose.dev.yml down
+# 查看日志: docker-compose -f docker-compose.dev.yml logs -f
+# ============================================================
+
+services:
+  # ==================== MySQL 8.0 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: sv_dev_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: short_video_saas
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev123456
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --max-connections=500
+      --innodb-buffer-pool-size=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sv_dev_network
+
+  # ==================== Redis 7.0 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: sv_dev_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sv_dev_network
+
+volumes:
+  mysql_dev_data:
+  redis_dev_data:
+
+networks:
+  sv_dev_network:
+    driver: bridge

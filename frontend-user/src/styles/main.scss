@@ -1,0 +1,213 @@
+/* 全局样式 - 深色主题 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #60a5fa;
+  --primary-light: #93c5fd;
+  --primary-dark: #3b82f6;
+  --accent: #8b5cf6;
+  --accent-light: #a78bfa;
+  --bg: #0f172a;
+  --bg-light: #1e293b;
+  --bg-dark: #020617;
+  --text: #e2e8f0;
+  --text-light: #94a3b8;
+  --text-white: #f8fafc;
+  --border: #334155;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --gradient-hero: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary-dark);
+  border-radius: 3px;
+}
+
+/* 响应式断点 */
+$breakpoint-mobile: 768px;
+
+@media (max-width: 768px) {
+  html { font-size: 14px; }
+  .container { padding: 0 12px !important; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+}
+
+/* 工具类 */
+.text-primary { color: var(--primary); }
+.text-light { color: var(--text-light); }
+.text-white { color: var(--text-white); }
+.bg-white { background: var(--bg-light); }
+.bg-light { background: var(--bg-light); }
+.rounded { border-radius: var(--radius); }
+.shadow { box-shadow: var(--shadow); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Element Plus 暗色主题覆盖 */
+.el-card {
+  background: var(--bg-light) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.el-card:hover {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+}
+.el-card__body {
+  color: var(--text) !important;
+}
+.el-button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.el-button:hover {
+  transform: translateY(-1px);
+}
+.el-button:active {
+  transform: translateY(0);
+}
+.el-button--primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+.el-button--primary:hover {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+}
+.el-input__wrapper {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.el-input__inner {
+  color: var(--text) !important;
+}
+.el-input__wrapper.is-focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+}
+.el-dialog {
+  background: var(--bg-light) !important;
+  border: 1px solid var(--border) !important;
+}
+.el-dialog__title {
+  color: var(--text) !important;
+}
+.el-message-box {
+  background: var(--bg-light) !important;
+  border-color: var(--border) !important;
+}
+.el-message-box__title {
+  color: var(--text) !important;
+}
+.el-message-box__message {
+  color: var(--text-light) !important;
+}
+.el-table {
+  background: var(--bg-light) !important;
+}
+.el-table th.el-table__cell {
+  background: var(--bg) !important;
+  color: var(--text-light) !important;
+  border-color: var(--border) !important;
+}
+.el-table tr {
+  background: var(--bg-light) !important;
+}
+.el-table td.el-table__cell {
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: var(--bg) !important;
+}
+.el-pagination {
+  color: var(--text-light) !important;
+}
+.el-pagination button {
+  background: var(--bg-light) !important;
+  color: var(--text-light) !important;
+}
+.el-pagination .el-pager li {
+  background: var(--bg-light) !important;
+  color: var(--text-light) !important;
+}
+.el-pagination .el-pager li.is-active {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+.el-radio-button__inner {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text-light) !important;
+}
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+.el-select-dropdown {
+  background: var(--bg-light) !important;
+  border-color: var(--border) !important;
+}
+.el-select-dropdown__item {
+  color: var(--text) !important;
+}
+.el-select-dropdown__item:hover {
+  background: var(--bg) !important;
+}
+.el-select-dropdown__item.selected {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+}

@@ -1,0 +1,221 @@
+version: "3.8"
+
+# ============================================
+# 爆款短视频复刻SaaS平台 - 生产环境编排
+# ============================================
+
+services:
+  # ==================== MySQL 8.0 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: sv_saas_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-short_video_saas}
+      MYSQL_USER: ${MYSQL_USER:-sv_saas}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sv_saas123}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/mysql/conf/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --max-connections=500
+      --innodb-buffer-pool-size=512M
+      --slow-query-log=1
+      --slow-query-log-file=/var/log/mysql/slow.log
+      --long-query-time=2
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sv_saas_network
+
+  # ==================== Redis 7.0 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: sv_saas_redis
+    restart: always
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sv_saas_network
+
+  # ==================== 后端 FastAPI ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sv_saas_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mysql+aiomysql://${MYSQL_USER:-sv_saas}:${MYSQL_PASSWORD:-sv_saas123}@mysql:3306/${MYSQL_DATABASE:-short_video_saas}
+      DATABASE_SYNC_URL: mysql+pymysql://${MYSQL_USER:-sv_saas}:${MYSQL_PASSWORD:-sv_saas123}@mysql:3306/${MYSQL_DATABASE:-short_video_saas}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
+      SECRET_KEY: ${SECRET_KEY:-your-production-secret-key-min-32-chars}
+      DEBUG: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost"]}
+      FFmpeg_BINARIES: ffmpeg
+      TEMP_DIR: /app/temp
+      VIDEO_STORAGE_PATH: /app/videos
+    volumes:
+      - video_storage:/app/videos
+      - temp_storage:/app/temp
+      - log_storage:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sv_saas_network
+
+  # ==================== Celery Worker（视频处理） ====================
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sv_saas_celery_worker
+    restart: always
+    command: celery -A app.tasks.celery_app worker -l info -c 4 -Q video_parse,video_generate,watermark,tts
+    environment:
+      DATABASE_URL: mysql+aiomysql://${MYSQL_USER:-sv_saas}:${MYSQL_PASSWORD:-sv_saas123}@mysql:3306/${MYSQL_DATABASE:-short_video_saas}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
+      SECRET_KEY: ${SECRET_KEY:-your-production-secret-key-min-32-chars}
+      FFmpeg_BINARIES: ffmpeg
+      TEMP_DIR: /app/temp
+      VIDEO_STORAGE_PATH: /app/videos
+    volumes:
+      - video_storage:/app/videos
+      - temp_storage:/app/temp
+      - log_storage:/app/logs
+    depends_on:
+      - backend
+      - redis
+    deploy:
+      replicas: 1
+    networks:
+      - sv_saas_network
+
+  # ==================== Celery Beat（定时任务） ====================
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sv_saas_celery_beat
+    restart: always
+    command: celery -A app.tasks.celery_app beat -l info
+    environment:
+      DATABASE_URL: mysql+aiomysql://${MYSQL_USER:-sv_saas}:${MYSQL_PASSWORD:-sv_saas123}@mysql:3306/${MYSQL_DATABASE:-short_video_saas}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
+      SECRET_KEY: ${SECRET_KEY:-your-production-secret-key-min-32-chars}
+    depends_on:
+      - redis
+    networks:
+      - sv_saas_network
+
+  # ==================== Nginx（反向代理+静态托管） ====================
+  nginx:
+    image: nginx:alpine
+    container_name: sv_saas_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend-user/dist:/usr/share/nginx/html/user:ro
+      - ./frontend-admin/dist:/usr/share/nginx/html/admin:ro
+      - video_storage:/var/www/videos:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sv_saas_network
+
+  # ==================== 监控：Prometheus ====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sv_saas_prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/dev/null'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - sv_saas_network
+
+  # ==================== 监控：Grafana ====================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sv_saas_grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - sv_saas_network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  video_storage:
+    driver: local
+  temp_storage:
+    driver: local
+  log_storage:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  sv_saas_network:
+    driver: bridge

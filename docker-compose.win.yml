@@ -1,0 +1,170 @@
+﻿version: "3.8"
+
+# ============================================================
+# 爆款短视频复刻SaaS平台 - Windows Docker 部署配置
+# ============================================================
+# 适用场景：Windows 服务器 / 本地电脑，无域名，HTTP 访问
+# 启动命令: docker-compose -f docker-compose.win.yml up -d
+# 停止命令: docker-compose -f docker-compose.win.yml down
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sv_win_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Root@2024Secure
+      MYSQL_DATABASE: short_video_saas
+      MYSQL_USER: sv_saas
+      MYSQL_PASSWORD: SvSaas@2024Secure
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --max-connections=500
+      --innodb-buffer-pool-size=512M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRoot@2024Secure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sv_win_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: sv_win_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sv_win_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sv_win_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mysql+aiomysql://sv_saas:SvSaas@2024Secure@mysql:3306/short_video_saas?charset=utf8mb4
+      DATABASE_SYNC_URL: mysql+pymysql://sv_saas:SvSaas@2024Secure@mysql:3306/short_video_saas?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SECRET_KEY: 1ywukbUXdwPj_xmPSSV7KdbAWvZ-_Ul8eK3X--LA8RFmGI-P6trVXHiDl_mUPw9Z5ouuDRrRqxlmilZjNcz9qQ
+      DEBUG: "false"
+      CORS_ORIGINS: '["http://localhost","http://127.0.0.1"]'
+
+      # ==================== AI 服务密钥 ====================
+      JIMENG_API_KEY: ''
+      KLING_API_KEY: ''
+      WHISPER_MODEL: base
+      WHISPER_DEVICE: cpu
+
+      # ==================== 微信支付（按需配置）====================
+      WECHAT_APPID: ''
+      WECHAT_SECRET: ''
+      WECHAT_MCH_ID: ''
+      WECHAT_API_KEY: ''
+      WECHAT_NOTIFY_URL: http://localhost/api/payments/wechat/notify
+
+      # ==================== 支付宝（按需配置）====================
+      ALIPAY_APP_ID: ''
+      ALIPAY_PRIVATE_KEY: ''
+      ALIPAY_PUBLIC_KEY: ''
+      ALIPAY_NOTIFY_URL: http://localhost/api/payments/alipay/notify
+
+      # ==================== 阿里云短信（按需配置）====================
+      ALIBABA_CLOUD_ACCESS_KEY_ID: ''
+      ALIBABA_CLOUD_ACCESS_KEY_SECRET: ''
+      ALIBABA_CLOUD_SMS_TEMPLATE_ID: ''
+      ALIBABA_CLOUD_SIGN_NAME: ''
+      TZ: Asia/Shanghai
+    volumes:
+      - video_storage:/app/videos
+      - temp_storage:/app/temp
+      - ./logs/backend:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sv_win_network
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sv_win_celery
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker -l info -c 4
+    environment:
+      DATABASE_URL: mysql+aiomysql://sv_saas:SvSaas@2024Secure@mysql:3306/short_video_saas?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SECRET_KEY: 1ywukbUXdwPj_xmPSSV7KdbAWvZ-_Ul8eK3X--LA8RFmGI-P6trVXHiDl_mUPw9Z5ouuDRrRqxlmilZjNcz9qQ
+      TZ: Asia/Shanghai
+    volumes:
+      - video_storage:/app/videos
+      - temp_storage:/app/temp
+      - ./logs/celery:/app/logs
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - sv_win_network
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sv_win_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.win.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend-user/dist:/usr/share/nginx/html/user:ro
+      - ./frontend-admin/dist:/usr/share/nginx/html/admin:ro
+      - video_storage:/var/www/videos:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - sv_win_network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  video_storage:
+    driver: local
+  temp_storage:
+    driver: local
+
+networks:
+  sv_win_network:
+    driver: bridge
